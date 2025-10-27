@@ -1,4 +1,6 @@
 // public/app.js
+const API_BASE = "https://flickbot.onrender.com"; // ✅ Replace with your actual Render URL
+
 const searchBtn = document.getElementById('searchBtn');
 const titleInput = document.getElementById('titleInput');
 const genreInput = document.getElementById('genreInput');
@@ -16,7 +18,7 @@ const chatWindow = document.getElementById('chatWindow');
 // -------------------- GENRE FETCH --------------------
 async function fetchGenres() {
   try {
-    const r = await fetch('/api/genres');
+    const r = await fetch(`${API_BASE}/api/genres`);
     if (!r.ok) throw new Error('Genres fetch error');
     const json = await r.json();
     return json.genres || [];
@@ -34,7 +36,7 @@ async function searchMovies() {
     genre: genreInput.value.trim(),
     year: yearInput.value.trim()
   };
-  const r = await fetch('/api/search', {
+  const r = await fetch(`${API_BASE}/api/search`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -73,7 +75,7 @@ function renderMovies(movies) {
 async function openMoviePopup(id) {
   popup.classList.remove('hidden');
   popupContent.innerHTML = '<div class="note">Loading details...</div>';
-  const r = await fetch(`/api/movie/${id}`);
+  const r = await fetch(`${API_BASE}/api/movie/${id}`);
   const data = await r.json();
 
   const poster = data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '';
@@ -125,11 +127,10 @@ chatForm.addEventListener('submit', async (ev) => {
   appendMessage('user', text);
   chatInput.value = '';
 
-  // placeholder message
   const placeholder = appendMessage('bot', '…');
 
   try {
-    const r = await fetch('/api/chat', {
+    const r = await fetch(`${API_BASE}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: text })
@@ -137,10 +138,9 @@ chatForm.addEventListener('submit', async (ev) => {
     const data = await r.json();
 
     if (data.reply) {
-      // Render Markdown into HTML
       let html = marked.parse(data.reply);
 
-      // Convert **Movie Title** into clickable links
+      // clickable movie titles
       html = html.replace(/\*\*(.*?)\*\*/g, (match, p1) => {
         const movieTitle = p1.trim();
         return `<a href="#" class="movie-link" data-title="${movieTitle}">${movieTitle}</a>`;
@@ -148,7 +148,6 @@ chatForm.addEventListener('submit', async (ev) => {
 
       placeholder.innerHTML = html;
 
-      // Add click events for all movie links
       placeholder.querySelectorAll('.movie-link').forEach(link => {
         link.addEventListener('click', ev => {
           ev.preventDefault();
@@ -182,9 +181,9 @@ function appendMessage(who, text) {
 
 // Escape HTML utility
 function escapeHtml(str = '') {
-  return String(str).replace(/[&<>"']/g, function (m) {
-    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m];
-  });
+  return String(str).replace(/[&<>"']/g, m =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]
+  );
 }
 
 // -------------------- INIT --------------------
