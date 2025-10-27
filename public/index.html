@@ -1,0 +1,61 @@
+<!-- public/index.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>FlickBot</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <h1>FlickBot</h1>
+  </header>
+
+  <main class="container">
+    <aside class="left">
+      <div class="search-card">
+        <h2>Search Movies</h2>
+        <label>Title
+          <input id="titleInput" placeholder="e.g. Inception"/>
+        </label>
+        <label>Genre
+          <input id="genreInput" placeholder="e.g. Action or 28 (id)"/>
+        </label>
+        <label>Year
+          <input id="yearInput" placeholder="e.g. 2010" type="number"/>
+        </label>
+        <button id="searchBtn">Search</button>
+        <div id="leftNote" class="note">Tip: leave title blank to search by genre/year.</div>
+      </div>
+    </aside>
+
+    <section class="center">
+      <div id="moviesGrid" class="grid"></div>
+    </section>
+
+    <aside class="right">
+      <div class="chat">
+        <div class="chat-header">FlickBot Chat</div>
+        <div id="chatWindow" class="chat-window"></div>
+        <form id="chatForm" class="chat-form">
+          <input id="chatInput" placeholder="Ask FlickBot for recommendations..." autocomplete="off"/>
+          <button type="submit">Send</button>
+        </form>
+      </div>
+    </aside>
+  </main>
+
+  <!-- popup -->
+  <div id="popup" class="popup hidden" role="dialog" aria-modal="true">
+    <div class="popup-inner">
+      <button id="closePopup" class="close">✕</button>
+      <div id="popupContent"></div>
+    </div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <script src="app.js"></script>
+</body>
+</html>
