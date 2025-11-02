@@ -1,0 +1,1045 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>FlickBot</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <header class="topbar">
+    <h1>FlickBot</h1>
+  </header>
+
+  <main class="container">
+    <aside class="left">
+      <div class="search-card">
+        <h2>Search Movies</h2>
+        <label>Title
+          <input id="titleInput" placeholder="e.g. Inception"/>
+        </label>
+        <label>Genre
+          <input id="genreInput" placeholder="e.g. Action or 28 (id)"/>
+        </label>
+        <label>Year
+          <input id="yearInput" placeholder="e.g. 2010" type="number"/>
+        </label>
+        <button id="searchBtn">Search</button>
+        <div id="leftNote" class="note">Tip: leave title blank to search by genre/year.</div>
+      </div>
+    </aside>
+
+    <section class="center">
+      <div id="moviesGrid" class="grid"></div>
+    </section>
+
+    <!-- Right panel removed -->
+    <aside class="right"></aside>
+  </main>
+
+  <!-- popup for movie details -->
+  <div id="popup" class="popup hidden" role="dialog" aria-modal="true">
+    <div class="popup-inner">
+      <button id="closePopup" class="close">✕</button>
+      <div id="popupContent"></div>
+    </div>
+  </div>
+
+  <!-- Gemini Chatbot Floating Icon and Popup -->
+  <div id="chatIcon" class="chat-icon">💬</div>
+
+  <div id="chatPopup" class="chatbot-popup hidden">
+    <div class="chatbot-header">
+      <span>FlickBot Chat</span>
+      <button id="closeChat" class="close-chat">✕</button>
+    </div>
+
+    <div id="chatbotMessages" class="chatbot-messages"></div>
+
+    <div class="chatbot-input-area">
+      <input id="chatbotInput" type="text" placeholder="Ask about movies..." autocomplete="off"/>
+      <button id="sendChat">Send</button>
+      <button id="clearChat">Clear</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* public/styles.css - polished IMDb-inspired cinematic theme */
+:root {
+  --bg: #0b1116;
+  --card: #11161b;
+  --accent: #f5c518;
+  --muted: #9aa6b2;
+  --text: #e6eef5;
+  --accent-glow: rgba(245, 197, 24, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, Segoe UI, Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(180deg, #071018 0%, #071722 100%);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- TOP BAR ---------- */
+.topbar {
+  padding: 18px 28px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.topbar h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* ---------- GRID LAYOUT ---------- */
+.container {
+  display: grid;
+  grid-template-columns: 260px 1fr 360px;
+  gap: 22px;
+  padding: 24px;
+  flex: 1;
+  align-items: start;
+}
+
+/* ---------- LEFT SEARCH PANEL ---------- */
+.left .search-card {
+  background: var(--card);
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(3, 6, 10, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+.left .search-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(3, 6, 10, 0.8);
+}
+.left h2 {
+  margin: 0 0 12px 0;
+  color: var(--accent);
+  font-size: 18px;
+}
+.left label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.left input {
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  transition: border-color 0.2s, background 0.2s;
+}
+.left input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: rgba(245, 197, 24, 0.08);
+}
+
+/* ---------- BUTTON ---------- */
+button,
+#searchBtn {
+  display: inline-block;
+  width: 100%;
+  background: var(--accent);
+  color: #111;
+  border: none;
+  font-weight: 600;
+  padding: 10px 0;
+  margin-top: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background 0.3s, transform 0.1s ease-in-out;
+}
+button:hover,
+#searchBtn:hover {
+  background: #ffd95c;
+}
+button:active,
+#searchBtn:active {
+  transform: scale(0.98);
+}
+
+/* ---------- CENTER MOVIE GRID ---------- */
+.center .grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+.movie-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  text-align: center;
+  padding-bottom: 10px;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+.movie-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(245, 197, 24, 0.1);
+}
+.movie-card img {
+  width: 100%;
+  display: block;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+}
+.movie-card .title {
+  font-size: 14px;
+  margin: 10px 6px 0 6px;
+  font-weight: 500;
+  color: #fff;
+  min-height: 34px;
+}
+
+/* ---------- RIGHT CHAT PANEL ---------- */
+.right .chat {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  border-radius: 12px;
+  height: 72vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow: 0 6px 20px rgba(3, 6, 10, 0.5);
+}
+.chat-header {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-weight: 600;
+  color: var(--accent);
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+.chat-window {
+  flex: 1;
+  padding: 14px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+.chat-message {
+  margin-bottom: 12px;
+  max-width: 85%;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.chat-message.user {
+  align-self: flex-end;
+  background: linear-gradient(180deg, rgba(245, 197, 24, 0.15), rgba(245, 197, 24, 0.08));
+  padding: 10px 12px;
+  border-radius: 10px 10px 0 10px;
+  color: var(--text);
+}
+.chat-message.bot {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 10px 12px;
+  border-radius: 10px 10px 10px 0;
+  color: var(--text);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.05);
+}
+.chat-message.bot strong {
+  color: var(--accent);
+}
+.chat-message.bot ol,
+.chat-message.bot ul {
+  margin-left: 16px;
+  padding-left: 16px;
+}
+
+.chat-form {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
+}
+.chat-form input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  font-size: 14px;
+}
+.chat-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ---------- POPUP MOVIE DETAIL ---------- */
+.popup {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  z-index: 100;
+}
+.popup.hidden {
+  display: none;
+}
+.popup-inner {
+  width: min(900px, 95%);
+  max-height: 85vh;
+  overflow: auto;
+  background: #0a131d;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 8px 40px rgba(2, 6, 12, 0.8);
+  color: var(--text);
+  position: relative;
+}
+.close {
+  position: absolute;
+  right: 18px;
+  top: 14px;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  font-size: 22px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.close:hover {
+  color: var(--accent);
+}
+
+/* ---------- TEXT + LINKS ---------- */
+.note {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+.movie-link {
+  color: #60a5fa;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+.movie-link:hover {
+  color: #93c5fd;
+}
+
+/* ---------- SCROLLBAR STYLE ---------- */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ---------- GEMINI CHATBOT POPUP ---------- */
+.chat-icon {
+  position: fixed;
+  bottom: 22px;
+  right: 22px;
+  background: var(--accent);
+  color: #111;
+  border-radius: 50%;
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: bold;
+  box-shadow: 0 4px 16px rgba(245, 197, 24, 0.35);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  z-index: 200;
+}
+.chat-icon:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(245, 197, 24, 0.5);
+}
+
+.chatbot-popup {
+  position: fixed;
+  bottom: 90px;
+  right: 22px;
+  width: 340px;
+  background: var(--card);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 300;
+}
+.chatbot-popup.hidden {
+  display: none;
+}
+
+.chatbot-header {
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--accent);
+  padding: 10px 12px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.close-chat {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+.close-chat:hover {
+  color: var(--accent);
+}
+
+.chatbot-messages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  max-height: 320px;
+}
+.chatbot-msg {
+  background: rgba(255, 255, 255, 0.05);
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+.chatbot-msg.user {
+  background: rgba(245, 197, 24, 0.2);
+  align-self: flex-end;
+}
+.chatbot-msg.bot {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.chatbot-input-area {
+  display: flex;
+  gap: 6px;
+  padding: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.chatbot-input-area input {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+.chatbot-input-area button {
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #111;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.chatbot-input-area button:hover {
+  background: #ffd95c;
+}
+.chatbot-messages {
+  scroll-behavior: smooth;
+}
+
+.chatbot-popup {
+  width: 360px;
+  height: 72vh;
+  display: flex;
+  flex-direction: column;
+}
+.chatbot-messages {
+  flex: 1;
+  padding: 14px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+/* ---------- GEMINI CHATBOT POPUP (IMDb-inspired polished style) ---------- */
+.chat-icon {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--accent);
+  color: #111;
+  border-radius: 50%;
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: bold;
+  box-shadow: 0 4px 16px rgba(245, 197, 24, 0.4);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  z-index: 200;
+}
+.chat-icon:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(245, 197, 24, 0.55);
+}
+
+.chatbot-popup {
+  position: fixed;
+  bottom: 90px;
+  right: 24px;
+  width: 360px;
+  height: 70vh;
+  background: var(--card);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.75);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 300;
+  animation: slideUp 0.3s ease;
+}
+.chatbot-popup.hidden {
+  display: none;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chatbot-header {
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--accent);
+  padding: 10px 14px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.close-chat {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.close-chat:hover {
+  color: var(--accent);
+}
+
+.chatbot-messages {
+  flex: 1;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  gap: 10px;
+  scroll-behavior: smooth;
+}
+
+.chatbot-msg {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  line-height: 1.4;
+  font-size: 14px;
+  color: var(--text);
+  word-wrap: break-word;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+.chatbot-msg.user {
+  align-self: flex-end;
+  background: linear-gradient(180deg, rgba(245, 197, 24, 0.25), rgba(245, 197, 24, 0.15));
+  border: 1px solid rgba(245, 197, 24, 0.35);
+  border-bottom-right-radius: 4px;
+}
+
+.chatbot-msg.bot {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom-left-radius: 4px;
+}
+
+.chatbot-msg.bot strong {
+  color: var(--accent);
+}
+
+.chatbot-input-area {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.chatbot-input-area input {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font-size: 14px;
+}
+.chatbot-input-area input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.chatbot-input-area button {
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #111;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.chatbot-input-area button:hover {
+  background: #ffd95c;
+}
+
+
+
+
+
+
+
+
+
+const API_BASE = "https://flickbot.onrender.com"; // ✅ Replace with your deployed backend URL
+
+const searchBtn = document.getElementById('searchBtn');
+const titleInput = document.getElementById('titleInput');
+const genreInput = document.getElementById('genreInput');
+const yearInput = document.getElementById('yearInput');
+const moviesGrid = document.getElementById('moviesGrid');
+
+const popup = document.getElementById('popup');
+const popupContent = document.getElementById('popupContent');
+const closePopup = document.getElementById('closePopup');
+
+// -------------------- MOVIE SEARCH --------------------
+async function searchMovies() {
+  moviesGrid.innerHTML = '<div class="note">Loading...</div>';
+  const payload = {
+    title: titleInput.value.trim(),
+    genre: genreInput.value.trim(),
+    year: yearInput.value.trim()
+  };
+  const r = await fetch(`${API_BASE}/api/search`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await r.json();
+  renderMovies(data.results || []);
+}
+
+// -------------------- MOVIE GRID --------------------
+function renderMovies(movies) {
+  if (!movies || movies.length === 0) {
+    moviesGrid.innerHTML = '<div class="note">No movies found. Try different filters.</div>';
+    return;
+  }
+  moviesGrid.innerHTML = '';
+  movies.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'movie-card';
+    const poster = m.poster_path
+      ? `https://image.tmdb.org/t/p/w342${m.poster_path}`
+      : 'https://via.placeholder.com/300x450?text=No+Image';
+    card.innerHTML = `
+      <img src="${poster}" alt="${escapeHtml(m.title)}" loading="lazy"/>
+      <div class="title">${escapeHtml(m.title)}
+        <div style="font-size:12px;color:#9aa6b2;margin-top:6px">
+          ${m.release_date ? m.release_date.slice(0, 4) : ''}
+        </div>
+      </div>
+    `;
+    card.addEventListener('click', () => openMoviePopup(m.id));
+    moviesGrid.appendChild(card);
+  });
+}
+
+// -------------------- MOVIE POPUP --------------------
+async function openMoviePopup(id) {
+  popup.classList.remove('hidden');
+  popupContent.innerHTML = '<div class="note">Loading details...</div>';
+  const r = await fetch(`${API_BASE}/api/movie/${id}`);
+  const data = await r.json();
+
+  const poster = data.poster_path ? `https://image.tmdb.org/t/p/w500${data.poster_path}` : '';
+  let html = `
+    <div style="display:flex;gap:18px">
+      <div style="flex:0 0 200px">
+        <img src="${poster}" style="width:100%;border-radius:8px" alt="poster"/>
+      </div>
+      <div style="flex:1">
+        <h2>${escapeHtml(data.title || '')}
+          <span style="color:#9aa6b2;font-size:14px">(${(data.release_date || '').slice(0, 4)})</span>
+        </h2>
+        <p style="color:#cbd6de">${escapeHtml(data.tagline || data.original_title || '')}</p>
+        <p>${escapeHtml(data.overview || 'No overview available.')}</p>
+        <p style="font-size:13px;color:#9aa6b2">
+          Runtime: ${data.runtime || 'N/A'} mins • Rating: ${data.vote_average || 'N/A'} • Votes: ${data.vote_count || 0}
+        </p>
+        <div style="margin-top:12px"><strong>Genres:</strong> ${(data.genres || []).map(g => g.name).join(', ') || 'N/A'}</div>
+        <div style="margin-top:12px"><strong>Cast:</strong> ${(data.credits && data.credits.cast ? data.credits.cast.slice(0, 6).map(c => c.name).join(', ') : 'N/A')}</div>
+      </div>
+    </div>
+  `;
+
+  if (data.videos && data.videos.results && data.videos.results.length) {
+    const trailer = data.videos.results.find(v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser')) || data.videos.results[0];
+    if (trailer) {
+      html += `
+        <div style="margin-top:16px">
+          <strong>Trailer:</strong>
+          <div style="margin-top:8px">
+            <iframe width="100%" height="360" src="https://www.youtube.com/embed/${trailer.key}"
+              frameborder="0" allowfullscreen></iframe>
+          </div>
+        </div>`;
+    }
+  }
+  popupContent.innerHTML = html;
+}
+closePopup.addEventListener('click', () => popup.classList.add('hidden'));
+
+// Escape HTML
+function escapeHtml(str = '') {
+  return String(str).replace(/[&<>"']/g, m =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]
+  );
+}
+
+// -------------------- INIT --------------------
+searchBtn.addEventListener('click', searchMovies);
+window.addEventListener('load', searchMovies);
+
+// -------------------- GEMINI CHATBOT --------------------
+// -------------------- GEMINI CHATBOT --------------------
+const chatIcon = document.getElementById('chatIcon');
+const chatPopup = document.getElementById('chatPopup');
+const closeChat = document.getElementById('closeChat');
+const chatbotInput = document.getElementById('chatbotInput');
+const chatbotMessages = document.getElementById('chatbotMessages');
+const sendChat = document.getElementById('sendChat');
+const clearChat = document.getElementById('clearChat');
+
+let chatHistory = JSON.parse(localStorage.getItem('flickbotChatHistory')) || [];
+renderChatHistory();
+
+function renderChatHistory() {
+  chatbotMessages.innerHTML = '';
+  chatHistory.forEach(msg => appendChatMsg(msg.role, msg.content, false));
+  chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+}
+
+function saveChat() {
+  localStorage.setItem('flickbotChatHistory', JSON.stringify(chatHistory));
+}
+
+// open/close popup
+chatIcon.addEventListener('click', () => chatPopup.classList.toggle('hidden'));
+closeChat.addEventListener('click', () => chatPopup.classList.add('hidden'));
+
+// send message
+async function handleSend() {
+  const text = chatbotInput.value.trim();
+  if (!text) return;
+
+  // show user message (NOT saved yet)
+  appendChatMsg('user', text, false);
+  chatbotInput.value = '';
+
+  // show placeholder (not saved)
+  const placeholder = appendChatMsg('bot', 'Thinking...', false);
+
+  try {
+    const r = await fetch(`${API_BASE}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+    const data = await r.json();
+    const reply = data.reply || 'No response.';
+
+    // format markdown and yellow-bold movie titles
+    let html = marked.parse(reply);
+    html = html.replace(/\*\*(.*?)\*\*/g, `<strong style="color: #FFD700;">$1</strong>`);
+
+    placeholder.innerHTML = html;
+
+    // save clean history: user + bot
+    chatHistory.push({ role: 'user', content: text });
+    chatHistory.push({ role: 'bot', content: reply });
+    saveChat();
+  } catch (err) {
+    placeholder.textContent = 'Error: ' + err.message;
+  }
+
+  chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+}
+
+sendChat.addEventListener('click', handleSend);
+chatbotInput.addEventListener('keypress', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    handleSend();
+  }
+});
+
+clearChat.addEventListener('click', () => {
+  chatbotMessages.innerHTML = '';
+  chatHistory = [];
+  localStorage.removeItem('flickbotChatHistory');
+});
+
+// helper to append messages
+function appendChatMsg(who, text, save = true) {
+  const div = document.createElement('div');
+  div.className = 'chatbot-msg ' + who;
+
+  if (who === 'bot') {
+    let html = marked.parse(text);
+    html = html.replace(/\*\*(.*?)\*\*/g, `<strong style="color: #FFD700;">$1</strong>`);
+    div.innerHTML = html;
+  } else {
+    div.textContent = text;
+  }
+
+  chatbotMessages.appendChild(div);
+  chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+
+  if (save) {
+    chatHistory.push({ role: who, content: text });
+    saveChat();
+  }
+  return div;
+}
+
+
+
+
+
+
+
+
+
+// server.js
+require('dotenv').config();
+const express = require('express');
+const fetch = require('node-fetch');
+const path = require('path');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// TMDb base
+const TMDB_KEY = process.env.TMDB_API_KEY;
+const TMDB_BASE = 'https://api.themoviedb.org/3';
+
+// Helper: fetch JSON with error handling
+async function fetchJson(url, opts = {}) {
+  const res = await fetch(url, opts);
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`HTTP ${res.status}: ${txt}`);
+  }
+  return res.json();
+}
+
+// 1) Get genre list (cache in-memory for simplicity)
+let genreCache = null;
+app.get('/api/genres', async (req, res) => {
+  try {
+    if (genreCache) return res.json(genreCache);
+    const url = `${TMDB_BASE}/genre/movie/list?api_key=${TMDB_KEY}&language=en-US`;
+    const data = await fetchJson(url);
+    genreCache = data;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2) Search endpoint: accepts { title, genre, year }
+app.post('/api/search', async (req, res) => {
+  try {
+    const { title, genre, year } = req.body || {};
+
+    // If title exists -> search
+    if (title && title.trim().length > 0) {
+      const q = encodeURIComponent(title.trim());
+      const url = `${TMDB_BASE}/search/movie?api_key=${TMDB_KEY}&query=${q}&language=en-US&page=1&include_adult=false`;
+      const data = await fetchJson(url);
+      return res.json(data);
+    }
+
+    // Else use discover
+    const params = new URLSearchParams({
+      api_key: TMDB_KEY,
+      language: 'en-US',
+      sort_by: 'popularity.desc',
+      page: '1',
+      include_adult: 'false'
+    });
+
+    if (year) params.append('year', String(year));
+
+    if (genre) {
+      // get genres if needed
+      if (!genreCache) {
+        const gdata = await fetchJson(`${TMDB_BASE}/genre/movie/list?api_key=${TMDB_KEY}&language=en-US`);
+        genreCache = gdata;
+      }
+      const found = genreCache.genres.find(g => g.name.toLowerCase() === genre.toLowerCase());
+      if (found) {
+        params.append('with_genres', String(found.id));
+      } else if (!isNaN(Number(genre))) {
+        params.append('with_genres', String(genre));
+      }
+    }
+
+    const url = `${TMDB_BASE}/discover/movie?${params.toString()}`;
+    const data = await fetchJson(url);
+    return res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3) Movie details endpoint
+app.get('/api/movie/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const url = `${TMDB_BASE}/movie/${id}?api_key=${TMDB_KEY}&language=en-US&append_to_response=videos,images,credits`;
+    const data = await fetchJson(url);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4) Chat endpoint -> Gemini v1 generateContent (fixed)
+app.post('/api/chat', async (req, res) => {
+  try {
+    const { message } = req.body || {};
+    if (!message) return res.status(400).json({ error: 'No message provided' });
+
+    const GEMINI_KEY = process.env.GEMINI_API_KEY;
+    const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+
+    if (!GEMINI_KEY) return res.status(500).json({ error: 'Server missing GEMINI_API_KEY' });
+
+    // ✅ Correct endpoint for new Gemini API
+    const endpoint = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
+
+    const body = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+            //   text: `You are FlickBot, a helpful movie assistant. Reply concisely and conversationally about movies.\n\nUser: ${message}`
+            text: `You are FlickBot, a helpful movie assistant. Reply concisely and use **Markdown** formatting (bold, lists, line breaks) for readability.\n\nUser: ${message}`
+
+            }
+          ]
+        }
+      ]
+    };
+
+    const r = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!r.ok) {
+      const txt = await r.text();
+      return res.status(500).json({ error: `Gemini API error: ${r.status} - ${txt}` });
+    }
+
+    const json = await r.json();
+
+    // Extract text safely
+    const botReply =
+      json?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      json?.candidates?.[0]?.content?.[0]?.parts?.[0]?.text ||
+      'No response from model';
+
+    res.json({ reply: botReply });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Fallback to index.html for SPA routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.listen(PORT, () => {
+  console.log(`FlickBot server running on http://localhost:${PORT}`);
+});

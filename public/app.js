@@ -1,5 +1,4 @@
-// public/app.js
-const API_BASE = "https://flickbot.onrender.com"; // ✅ Replace with your actual Render URL
+const API_BASE = "https://flickbot.onrender.com"; // ✅ Replace with your deployed backend URL
 
 const searchBtn = document.getElementById('searchBtn');
 const titleInput = document.getElementById('titleInput');
@@ -10,23 +9,6 @@ const moviesGrid = document.getElementById('moviesGrid');
 const popup = document.getElementById('popup');
 const popupContent = document.getElementById('popupContent');
 const closePopup = document.getElementById('closePopup');
-
-const chatForm = document.getElementById('chatForm');
-const chatInput = document.getElementById('chatInput');
-const chatWindow = document.getElementById('chatWindow');
-
-// -------------------- GENRE FETCH --------------------
-async function fetchGenres() {
-  try {
-    const r = await fetch(`${API_BASE}/api/genres`);
-    if (!r.ok) throw new Error('Genres fetch error');
-    const json = await r.json();
-    return json.genres || [];
-  } catch (e) {
-    console.warn('Could not fetch genres', e);
-    return [];
-  }
-}
 
 // -------------------- MOVIE SEARCH --------------------
 async function searchMovies() {
@@ -45,7 +27,7 @@ async function searchMovies() {
   renderMovies(data.results || []);
 }
 
-// -------------------- MOVIE GRID RENDER --------------------
+// -------------------- MOVIE GRID --------------------
 function renderMovies(movies) {
   if (!movies || movies.length === 0) {
     moviesGrid.innerHTML = '<div class="note">No movies found. Try different filters.</div>';
@@ -99,7 +81,6 @@ async function openMoviePopup(id) {
     </div>
   `;
 
-  // trailer
   if (data.videos && data.videos.results && data.videos.results.length) {
     const trailer = data.videos.results.find(v => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser')) || data.videos.results[0];
     if (trailer) {
@@ -113,73 +94,11 @@ async function openMoviePopup(id) {
         </div>`;
     }
   }
-
   popupContent.innerHTML = html;
 }
-
 closePopup.addEventListener('click', () => popup.classList.add('hidden'));
 
-// -------------------- CHAT SYSTEM --------------------
-chatForm.addEventListener('submit', async (ev) => {
-  ev.preventDefault();
-  const text = chatInput.value.trim();
-  if (!text) return;
-  appendMessage('user', text);
-  chatInput.value = '';
-
-  const placeholder = appendMessage('bot', '…');
-
-  try {
-    const r = await fetch(`${API_BASE}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text })
-    });
-    const data = await r.json();
-
-    if (data.reply) {
-      let html = marked.parse(data.reply);
-
-      // clickable movie titles
-      html = html.replace(/\*\*(.*?)\*\*/g, (match, p1) => {
-        const movieTitle = p1.trim();
-        return `<a href="#" class="movie-link" data-title="${movieTitle}">${movieTitle}</a>`;
-      });
-
-      placeholder.innerHTML = html;
-
-      placeholder.querySelectorAll('.movie-link').forEach(link => {
-        link.addEventListener('click', ev => {
-          ev.preventDefault();
-          const movieTitle = ev.target.dataset.title;
-          titleInput.value = movieTitle;
-          genreInput.value = '';
-          yearInput.value = '';
-          searchMovies();
-        });
-      });
-    } else {
-      throw new Error(data.error || 'No reply');
-    }
-  } catch (err) {
-    placeholder.className = 'chat-message bot';
-    placeholder.textContent = 'Error: ' + err.message;
-  }
-
-  chatWindow.scrollTop = chatWindow.scrollHeight;
-});
-
-// appendMessage returns the created message element
-function appendMessage(who, text) {
-  const div = document.createElement('div');
-  div.className = 'chat-message ' + (who === 'user' ? 'user' : 'bot');
-  div.innerHTML = escapeHtml(text);
-  chatWindow.appendChild(div);
-  chatWindow.scrollTop = chatWindow.scrollHeight;
-  return div;
-}
-
-// Escape HTML utility
+// Escape HTML
 function escapeHtml(str = '') {
   return String(str).replace(/[&<>"']/g, m =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]
@@ -188,10 +107,134 @@ function escapeHtml(str = '') {
 
 // -------------------- INIT --------------------
 searchBtn.addEventListener('click', searchMovies);
+window.addEventListener('load', searchMovies);
 
-window.addEventListener('load', () => {
-  titleInput.value = '';
-  genreInput.value = '';
-  yearInput.value = '';
-  searchMovies();
+// -------------------- GEMINI CHATBOT --------------------
+// -------------------- GEMINI CHATBOT --------------------
+const chatIcon = document.getElementById('chatIcon');
+const chatPopup = document.getElementById('chatPopup');
+const closeChat = document.getElementById('closeChat');
+const chatbotInput = document.getElementById('chatbotInput');
+const chatbotMessages = document.getElementById('chatbotMessages');
+const sendChat = document.getElementById('sendChat');
+const clearChat = document.getElementById('clearChat');
+
+let chatHistory = JSON.parse(localStorage.getItem('flickbotChatHistory')) || [];
+renderChatHistory();
+
+function renderChatHistory() {
+  chatbotMessages.innerHTML = '';
+  chatHistory.forEach(msg => appendChatMsg(msg.role, msg.content, false));
+  chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+}
+
+function saveChat() {
+  localStorage.setItem('flickbotChatHistory', JSON.stringify(chatHistory));
+}
+
+// open/close popup
+chatIcon.addEventListener('click', () => chatPopup.classList.toggle('hidden'));
+closeChat.addEventListener('click', () => chatPopup.classList.add('hidden'));
+
+// send message
+async function handleSend() {
+  const text = chatbotInput.value.trim();
+  if (!text) return;
+
+  appendChatMsg('user', text, false);
+  chatbotInput.value = '';
+
+  const placeholder = appendChatMsg('bot', 'Thinking...', false);
+
+  try {
+    const r = await fetch(`${API_BASE}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+    const data = await r.json();
+    const reply = data.reply || 'No response.';
+
+    // Convert **Movie Title** → clickable golden link
+    let html = marked.parse(reply);
+    html = html.replace(/\*\*(.*?)\*\*/g, `<strong class="movie-link" data-title="$1">$1</strong>`);
+
+    placeholder.innerHTML = html;
+
+    // reattach click handlers after rendering
+    attachMovieLinkHandlers();
+
+    // save chat
+    chatHistory.push({ role: 'user', content: text });
+    chatHistory.push({ role: 'bot', content: reply });
+    saveChat();
+  } catch (err) {
+    placeholder.textContent = 'Error: ' + err.message;
+  }
+
+  chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+}
+
+sendChat.addEventListener('click', handleSend);
+chatbotInput.addEventListener('keypress', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    handleSend();
+  }
 });
+
+clearChat.addEventListener('click', () => {
+  chatbotMessages.innerHTML = '';
+  chatHistory = [];
+  localStorage.removeItem('flickbotChatHistory');
+});
+
+// Append chat messages
+function appendChatMsg(who, text, save = true) {
+  const div = document.createElement('div');
+  div.className = 'chatbot-msg ' + who;
+
+  if (who === 'bot') {
+    let html = marked.parse(text);
+    html = html.replace(/\*\*(.*?)\*\*/g, `<strong class="movie-link" data-title="$1">$1</strong>`);
+    div.innerHTML = html;
+  } else {
+    div.textContent = text;
+  }
+
+  chatbotMessages.appendChild(div);
+  chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+
+  if (save) {
+    chatHistory.push({ role: who, content: text });
+    saveChat();
+  }
+
+  // attach click listeners
+  attachMovieLinkHandlers();
+
+  return div;
+}
+
+// 🔥 Handles clickable movie titles dynamically
+function attachMovieLinkHandlers() {
+  chatbotMessages.querySelectorAll(".movie-link").forEach(link => {
+    link.style.color = "#FFD700";
+    link.style.fontWeight = "600";
+    link.style.cursor = "pointer";
+    link.style.textDecoration = "underline";
+
+    // remove previous listener (avoid duplicates)
+    link.replaceWith(link.cloneNode(true));
+  });
+
+  chatbotMessages.querySelectorAll(".movie-link").forEach(link => {
+    link.addEventListener("click", () => {
+      const movieTitle = link.getAttribute("data-title");
+      if (titleInput && searchBtn) {
+        titleInput.value = movieTitle;
+        searchBtn.click();
+      }
+    });
+  });
+}

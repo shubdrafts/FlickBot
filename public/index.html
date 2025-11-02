@@ -1,4 +1,3 @@
-<!-- public/index.html -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -34,28 +33,37 @@
       <div id="moviesGrid" class="grid"></div>
     </section>
 
-    <aside class="right">
-      <div class="chat">
-        <div class="chat-header">FlickBot Chat</div>
-        <div id="chatWindow" class="chat-window"></div>
-        <form id="chatForm" class="chat-form">
-          <input id="chatInput" placeholder="Ask FlickBot for recommendations..." autocomplete="off"/>
-          <button type="submit">Send</button>
-        </form>
-      </div>
-    </aside>
+    <!-- Right panel removed -->
+    <aside class="right"></aside>
   </main>
 
-  <!-- popup -->
+  <!-- popup for movie details -->
   <div id="popup" class="popup hidden" role="dialog" aria-modal="true">
     <div class="popup-inner">
       <button id="closePopup" class="close">✕</button>
       <div id="popupContent"></div>
     </div>
   </div>
-  
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+  <!-- Gemini Chatbot Floating Icon and Popup -->
+  <div id="chatIcon" class="chat-icon">💬</div>
+
+  <div id="chatPopup" class="chatbot-popup hidden">
+    <div class="chatbot-header">
+      <span>FlickBot Chat</span>
+      <button id="closeChat" class="close-chat">✕</button>
+    </div>
+
+    <div id="chatbotMessages" class="chatbot-messages"></div>
+
+    <div class="chatbot-input-area">
+      <input id="chatbotInput" type="text" placeholder="Ask about movies..." autocomplete="off"/>
+      <button id="sendChat">Send</button>
+      <button id="clearChat">Clear</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

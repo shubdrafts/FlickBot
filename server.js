@@ -13,11 +13,9 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// TMDb base
 const TMDB_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 
-// Helper: fetch JSON with error handling
 async function fetchJson(url, opts = {}) {
   const res = await fetch(url, opts);
   if (!res.ok) {
@@ -27,7 +25,6 @@ async function fetchJson(url, opts = {}) {
   return res.json();
 }
 
-// 1) Get genre list (cache in-memory for simplicity)
 let genreCache = null;
 app.get('/api/genres', async (req, res) => {
   try {
@@ -41,32 +38,51 @@ app.get('/api/genres', async (req, res) => {
   }
 });
 
-// 2) Search endpoint: accepts { title, genre, year }
+// ✅ FIXED SEARCH ENDPOINT
 app.post('/api/search', async (req, res) => {
   try {
     const { title, genre, year } = req.body || {};
+    console.log('[SEARCH]', { title, genre, year });
 
-    // If title exists -> search
+    // If searching by title
     if (title && title.trim().length > 0) {
-      const q = encodeURIComponent(title.trim());
-      const url = `${TMDB_BASE}/search/movie?api_key=${TMDB_KEY}&query=${q}&language=en-US&page=1&include_adult=false`;
+      const params = new URLSearchParams({
+        api_key: TMDB_KEY,
+        query: title.trim(),
+        language: 'en-US',
+        page: '1',
+        include_adult: 'false'
+      });
+      if (year) params.append('year', String(year));
+
+      const url = `${TMDB_BASE}/search/movie?${params.toString()}`;
       const data = await fetchJson(url);
-      return res.json(data);
+
+      // Filter by year manually (extra safety)
+      let results = data.results || [];
+      if (year) {
+        results = results.filter(m => m.release_date && m.release_date.startsWith(String(year)));
+      }
+
+      return res.json({ ...data, results });
     }
 
-    // Else use discover
+    // Otherwise discover movies
     const params = new URLSearchParams({
       api_key: TMDB_KEY,
       language: 'en-US',
       sort_by: 'popularity.desc',
-      page: '1',
-      include_adult: 'false'
+      include_adult: 'false',
+      page: '1'
     });
 
-    if (year) params.append('year', String(year));
+    // ✅ Use exact year range filtering
+    if (year) {
+      params.append('primary_release_date.gte', `${year}-01-01`);
+      params.append('primary_release_date.lte', `${year}-12-31`);
+    }
 
     if (genre) {
-      // get genres if needed
       if (!genreCache) {
         const gdata = await fetchJson(`${TMDB_BASE}/genre/movie/list?api_key=${TMDB_KEY}&language=en-US`);
         genreCache = gdata;
@@ -80,14 +96,16 @@ app.post('/api/search', async (req, res) => {
     }
 
     const url = `${TMDB_BASE}/discover/movie?${params.toString()}`;
+    console.log('[DISCOVER URL]', url);
     const data = await fetchJson(url);
     return res.json(data);
   } catch (err) {
+    console.error('[SEARCH ERROR]', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// 3) Movie details endpoint
+// Movie details
 app.get('/api/movie/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -99,7 +117,7 @@ app.get('/api/movie/:id', async (req, res) => {
   }
 });
 
-// 4) Chat endpoint -> Gemini v1 generateContent (fixed)
+// Chat
 app.post('/api/chat', async (req, res) => {
   try {
     const { message } = req.body || {};
@@ -107,21 +125,15 @@ app.post('/api/chat', async (req, res) => {
 
     const GEMINI_KEY = process.env.GEMINI_API_KEY;
     const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
-
-    if (!GEMINI_KEY) return res.status(500).json({ error: 'Server missing GEMINI_API_KEY' });
-
-    // ✅ Correct endpoint for new Gemini API
     const endpoint = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`;
 
     const body = {
       contents: [
         {
-          role: "user",
+          role: 'user',
           parts: [
             {
-            //   text: `You are FlickBot, a helpful movie assistant. Reply concisely and conversationally about movies.\n\nUser: ${message}`
-            text: `You are FlickBot, a helpful movie assistant. Reply concisely and use **Markdown** formatting (bold, lists, line breaks) for readability.\n\nUser: ${message}`
-
+              text: `You are FlickBot, a helpful movie assistant. Reply concisely and use **Markdown** formatting (bold, lists, line breaks) for readability.\n\nUser: ${message}`
             }
           ]
         }
@@ -140,11 +152,8 @@ app.post('/api/chat', async (req, res) => {
     }
 
     const json = await r.json();
-
-    // Extract text safely
     const botReply =
       json?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      json?.candidates?.[0]?.content?.[0]?.parts?.[0]?.text ||
       'No response from model';
 
     res.json({ reply: botReply });
@@ -153,7 +162,7 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-// Fallback to index.html for SPA routing
+// Fallback
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
