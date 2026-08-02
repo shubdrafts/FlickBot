@@ -1,69 +1,475 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html class="dark" lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>FlickBot</title>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>FlickBot — AI Cinema & Movie Universe</title>
+  
+  <!-- Tailwind CSS CDN + Plugins -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  
+  <!-- Fonts & Material Symbols -->
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  
+  <!-- Marked Markdown Parser -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- Tailwind Theme Extension Config -->
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "tertiary-container": "#c5ccd2",
+            "error": "#ffb4ab",
+            "outline": "#9a9078",
+            "primary-fixed": "#ffe08b",
+            "on-primary-fixed": "#241a00",
+            "on-primary-fixed-variant": "#584400",
+            "on-secondary": "#183346",
+            "secondary-container": "#30495e",
+            "surface-bright": "#36393e",
+            "primary": "#ffe5a0",
+            "primary-container": "#f5c518",
+            "on-tertiary-container": "#4f565c",
+            "surface-container": "#1d2024",
+            "on-tertiary-fixed-variant": "#41484d",
+            "on-error-container": "#ffdad6",
+            "surface-container-highest": "#323539",
+            "on-background": "#e1e2e8",
+            "surface-dim": "#111417",
+            "surface-variant": "#323539",
+            "on-error": "#690005",
+            "on-tertiary": "#2a3136",
+            "on-tertiary-fixed": "#161c21",
+            "surface": "#111417",
+            "inverse-primary": "#745b00",
+            "on-secondary-fixed-variant": "#30495e",
+            "tertiary-fixed-dim": "#c0c7ce",
+            "surface-tint": "#f0c110",
+            "inverse-surface": "#e1e2e8",
+            "error-container": "#93000a",
+            "on-surface-variant": "#d1c5ac",
+            "surface-container-low": "#191c20",
+            "secondary-fixed-dim": "#afcae2",
+            "on-secondary-fixed": "#001e30",
+            "tertiary-fixed": "#dce3ea",
+            "secondary-fixed": "#cbe6ff",
+            "on-secondary-container": "#9eb8d1",
+            "on-surface": "#e1e2e8",
+            "primary-fixed-dim": "#f0c110",
+            "secondary": "#afcae2",
+            "outline-variant": "#4e4633",
+            "background": "#111417",
+            "surface-container-lowest": "#0b0e12",
+            "inverse-on-surface": "#2e3135",
+            "surface-container-high": "#272a2e",
+            "on-primary-container": "#695200",
+            "on-primary": "#3d2f00",
+            "tertiary": "#e1e8ef"
+          },
+          "borderRadius": {
+            "DEFAULT": "1rem",
+            "lg": "2rem",
+            "xl": "3rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "stack-md": "16px",
+            "container-max": "1440px",
+            "margin-mobile": "20px",
+            "stack-sm": "8px",
+            "stack-lg": "32px",
+            "gutter": "24px",
+            "margin-desktop": "48px"
+          },
+          "fontFamily": {
+            "headline-lg-mobile": ["Manrope", "sans-serif"],
+            "headline-xl": ["Manrope", "sans-serif"],
+            "label-sm": ["Hanken Grotesk", "sans-serif"],
+            "headline-lg": ["Manrope", "sans-serif"],
+            "body-md": ["Manrope", "sans-serif"],
+            "label-md": ["Hanken Grotesk", "sans-serif"]
+          },
+          "fontSize": {
+            "headline-lg-mobile": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+            "headline-xl": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "label-sm": ["12px", {"lineHeight": "1", "fontWeight": "600"}],
+            "headline-lg": ["32px", {"lineHeight": "1.25", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}],
+            "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "500"}]
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Custom Styles -->
   <link rel="stylesheet" href="styles.css"/>
 </head>
-<body>
-  <header class="topbar">
-    <h1>FlickBot</h1>
-  </header>
+<body class="font-body-md text-body-md bg-background text-on-surface select-none">
+  <!-- Background Atmospheric Orbs -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <div class="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary/10 blur-[140px] rounded-full"></div>
+    <div class="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-secondary/15 blur-[120px] rounded-full"></div>
+  </div>
 
-  <main class="container">
-    <aside class="left">
-      <div class="search-card">
-        <h2>Search Movies</h2>
-        <label>Title
-          <input id="titleInput" placeholder="e.g. Inception"/>
-        </label>
-        <label>Genre
-          <input id="genreInput" placeholder="e.g. Action or 28 (id)"/>
-        </label>
-        <label>Year
-          <input id="yearInput" placeholder="e.g. 2010" type="number"/>
-        </label>
-        <button id="searchBtn">Search</button>
-        <div id="leftNote" class="note">Tip: leave title blank to search by genre/year.</div>
+  <!-- Top Navigation Bar -->
+  <nav class="w-full h-16 sticky top-0 z-40 border-b border-white/15 bg-surface/70 backdrop-blur-3xl flex justify-between items-center px-4 md:px-margin-desktop shadow-md">
+    <div class="flex items-center gap-6">
+      <a href="#" class="flex items-center gap-2 group">
+        <span class="material-symbols-outlined text-primary-container text-[28px] group-hover:rotate-12 transition-transform">movie_filter</span>
+        <span class="font-headline-lg text-[26px] font-bold text-primary-container tracking-tight">FlickBot</span>
+      </a>
+      <div class="hidden md:flex items-center gap-6 ml-6">
+        <a id="navDashboard" class="text-primary font-bold border-b-2 border-primary pb-1 font-body-md text-body-md" href="#">Dashboard</a>
+        <a id="navMovies" class="text-on-surface-variant hover:bg-white/10 hover:text-primary transition-all px-3 py-1 rounded-full font-body-md text-body-md" href="#">Movies</a>
+        <a id="navTvShows" class="text-on-surface-variant hover:bg-white/10 hover:text-primary transition-all px-3 py-1 rounded-full font-body-md text-body-md" href="#">TV Shows</a>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-4">
+      <div class="glass-panel rounded-full px-4 py-1.5 flex items-center gap-2 border border-white/10 focus-within:border-primary/50 transition-colors">
+        <span class="material-symbols-outlined text-on-surface-variant text-[20px]">search</span>
+        <input id="searchBarInput" class="bg-transparent border-none outline-none focus:ring-0 text-label-md font-label-md w-36 sm:w-56 text-on-surface placeholder:text-on-surface-variant/50" placeholder="Search universe..." type="text"/>
+        <button id="searchBarBtn" class="text-xs text-primary hover:underline font-bold px-1">Go</button>
+      </div>
+      <button id="notifBtn" class="p-2 rounded-full hover:bg-white/10 transition-all text-on-surface-variant relative" title="Notifications">
+        <span class="material-symbols-outlined">notifications</span>
+        <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary-container"></span>
+      </button>
+      <div class="w-9 h-9 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center overflow-hidden cursor-pointer hover:border-primary transition-colors">
+        <img class="w-full h-full object-cover" alt="User profile" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"/>
+      </div>
+    </div>
+  </nav>
+
+  <div class="flex min-h-[calc(100vh-64px)] relative z-10">
+    <!-- Sidebar Navigation -->
+    <aside class="hidden lg:flex fixed left-0 top-16 h-[calc(100vh-64px)] w-64 z-30 border-r border-white/10 bg-surface/40 backdrop-blur-2xl flex-col pt-6 pb-8">
+      <div class="px-6 mb-6">
+        <p class="text-label-sm font-label-sm text-on-surface-variant/60 uppercase tracking-widest mb-3">Discover</p>
+        <nav class="flex flex-col gap-1">
+          <button id="filterBtnDiscover" class="flex items-center gap-3 bg-primary/20 text-primary-fixed rounded-r-full py-3 px-6 border-l-4 border-primary font-label-md text-label-md transition-all text-left w-full">
+            <span class="material-symbols-outlined">explore</span>
+            <span>Discover</span>
+          </button>
+          <button id="filterBtnTrending" class="flex items-center gap-3 text-on-surface-variant py-3 px-6 hover:bg-white/5 hover:text-primary transition-colors font-label-md text-label-md text-left w-full">
+            <span class="material-symbols-outlined">trending_up</span>
+            <span>Trending</span>
+          </button>
+          <button id="filterBtnLibrary" class="flex items-center gap-3 text-on-surface-variant py-3 px-6 hover:bg-white/5 hover:text-primary transition-colors font-label-md text-label-md text-left w-full">
+            <span class="material-symbols-outlined">video_library</span>
+            <span>Library</span>
+          </button>
+          <button id="filterBtnWatchlist" class="flex items-center gap-3 text-on-surface-variant py-3 px-6 hover:bg-white/5 hover:text-primary transition-colors font-label-md text-label-md text-left w-full">
+            <span class="material-symbols-outlined">bookmark</span>
+            <span>Watchlist</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Advanced Filters Section -->
+      <div class="px-6 mt-2 border-t border-white/5 pt-6">
+        <p class="text-label-sm font-label-sm text-on-surface-variant/60 uppercase tracking-widest mb-3">Refine</p>
+        <div class="flex flex-col gap-3">
+          <div class="space-y-1">
+            <label class="text-[11px] text-on-surface-variant/70 ml-1">Genre</label>
+            <select id="genreSelect" class="w-full bg-white/5 border border-white/10 rounded-full py-2 px-4 text-label-md text-on-surface focus:ring-1 focus:ring-primary/50 outline-none cursor-pointer">
+              <option value="">All Genres</option>
+            </select>
+          </div>
+          <div class="space-y-1">
+            <label class="text-[11px] text-on-surface-variant/70 ml-1">Release Year</label>
+            <select id="yearSelect" class="w-full bg-white/5 border border-white/10 rounded-full py-2 px-4 text-label-md text-on-surface focus:ring-1 focus:ring-primary/50 outline-none cursor-pointer">
+              <option value="">All Years</option>
+              <option value="2024">2024</option>
+              <option value="2023">2023</option>
+              <option value="2022">2022</option>
+              <option value="2021">2021</option>
+              <option value="2020">2020</option>
+              <option value="2010">2010s Classics</option>
+              <option value="2000">2000s Classics</option>
+            </select>
+          </div>
+          <button id="askAiBtn" class="mt-3 bg-primary-container text-on-primary-container font-bold py-3 rounded-full hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary-container/20">
+            <span class="material-symbols-outlined text-[20px]">smart_toy</span>
+            Ask AI Assistant
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-auto px-6">
+        <nav class="flex flex-col gap-1 border-t border-white/5 pt-4">
+          <a class="flex items-center gap-3 text-on-surface-variant py-2 px-4 hover:text-primary transition-colors font-label-md text-label-md" href="#">
+            <span class="material-symbols-outlined">settings</span>
+            <span>Settings</span>
+          </a>
+          <a class="flex items-center gap-3 text-on-surface-variant py-2 px-4 hover:text-primary transition-colors font-label-md text-label-md" href="#">
+            <span class="material-symbols-outlined">logout</span>
+            <span>Logout</span>
+          </a>
+        </nav>
       </div>
     </aside>
 
-    <section class="center">
-      <div id="moviesGrid" class="grid"></div>
-    </section>
+    <!-- Main Content Area -->
+    <main class="flex-1 lg:ml-64 p-4 sm:p-6 lg:p-margin-desktop min-w-0">
+      <!-- Hero / Featured Section -->
+      <section id="heroSection" class="mb-8 relative rounded-2xl overflow-hidden glass-panel border border-white/10 group shadow-2xl">
+        <div class="absolute inset-0 bg-gradient-to-r from-surface via-surface/70 to-transparent z-10"></div>
+        <div class="h-[340px] sm:h-[400px] w-full relative">
+          <img id="heroBackdropImg" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Hero Featured Movie" src="https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1600&auto=format&fit=crop&q=80"/>
+          <div class="absolute bottom-0 left-0 p-6 sm:p-10 z-20 max-w-2xl">
+            <span id="heroBadge" class="inline-flex items-center gap-1 px-3.5 py-1 rounded-full bg-primary-container text-on-primary-container text-label-sm font-bold mb-3 shadow-md">
+              <span class="material-symbols-outlined text-[16px]">local_fire_department</span> Trending Highlight
+            </span>
+            <h1 id="heroTitle" class="font-headline-xl text-headline-xl mb-3 text-white drop-shadow-md">Across the Multiverse</h1>
+            <p id="heroOverview" class="text-on-surface-variant text-body-md line-clamp-2 mb-6 max-w-xl">Experience the next chapter of the animation revolution with stunning visuals, deep emotional storytelling, and multiversal wonder.</p>
+            <div class="flex flex-wrap gap-4">
+              <button id="heroWatchBtn" class="bg-primary text-on-primary font-bold px-8 py-3 rounded-full flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                Watch Now
+              </button>
+              <button id="heroDetailsBtn" class="glass-pill px-8 py-3 rounded-full border border-white/20 hover:bg-white/15 transition-all font-bold text-white flex items-center gap-2">
+                <span class="material-symbols-outlined">info</span>
+                Details
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
 
-    <!-- Right panel removed -->
-    <aside class="right"></aside>
-  </main>
+      <!-- Main Movies Grid Section -->
+      <section class="mb-10">
+        <div class="flex justify-between items-end mb-6">
+          <div>
+            <h2 id="sectionTitle" class="font-headline-lg text-headline-lg text-white">Trending Movies</h2>
+            <p id="sectionSubtitle" class="text-on-surface-variant font-body-md opacity-70">Handpicked visual masterpieces for your viewing pleasure.</p>
+          </div>
+          <button id="viewAllBtn" class="text-primary hover:underline font-label-md text-label-md flex items-center gap-1 transition-all">
+            View All <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+          </button>
+        </div>
 
-  <!-- popup for movie details -->
-  <div id="popup" class="popup hidden" role="dialog" aria-modal="true">
-    <div class="popup-inner">
-      <button id="closePopup" class="close">✕</button>
-      <div id="popupContent"></div>
+        <!-- Movie Grid Container -->
+        <div id="moviesGrid" class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 min-h-[300px]">
+          <!-- Dynamic Movie Cards Render Here -->
+        </div>
+      </section>
+
+      <!-- Bottom Section - AI Recommendation Bento & Watch History -->
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+        <div class="lg:col-span-2 glass-panel p-6 sm:p-8 rounded-2xl flex flex-col sm:flex-row gap-6 items-center border border-white/10 relative overflow-hidden">
+          <div class="w-28 h-28 flex-shrink-0 bg-primary-container/20 rounded-full flex items-center justify-center relative overflow-hidden border border-primary/30 shadow-inner">
+            <div class="absolute inset-0 shimmer"></div>
+            <span class="material-symbols-outlined text-[52px] text-primary-container">smart_toy</span>
+          </div>
+          <div>
+            <h4 class="font-headline-lg text-headline-lg text-primary-fixed mb-2">Personalized AI Picks</h4>
+            <p class="text-on-surface-variant font-body-md mb-4">Powered by Gemini AI. Get tailored recommendations based on your favorite film genres, directors, and mood.</p>
+            <button id="aiPicksBtn" class="text-primary font-bold flex items-center gap-2 group hover:underline">
+              <span>Show AI Recommendations</span> 
+              <span class="material-symbols-outlined group-hover:translate-x-1.5 transition-transform">arrow_forward</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Watch History Widget -->
+        <div class="glass-panel p-6 sm:p-8 rounded-2xl border border-white/10 flex flex-col justify-between">
+          <div>
+            <h4 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest mb-4">Watch History</h4>
+            <div id="watchHistoryList" class="flex flex-col gap-3">
+              <!-- Dynamically populated or default history items -->
+              <div class="flex items-center gap-3 group cursor-pointer" onclick="openMoviePopup(569094)">
+                <div class="w-10 h-10 rounded bg-white/10 overflow-hidden flex-shrink-0">
+                  <img class="w-full h-full object-cover" alt="Spider-Man" src="https://image.tmdb.org/t/p/w185/8Vt6mWEReuy4Of61Lnj5Xj7sFff.jpg"/>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-[13px] font-bold text-white truncate">Across the Spider-Verse</p>
+                  <div class="w-full h-1.5 bg-white/10 rounded-full mt-1"><div class="w-[85%] h-full bg-primary rounded-full"></div></div>
+                </div>
+              </div>
+              <div class="flex items-center gap-3 group cursor-pointer" onclick="openMoviePopup(157336)">
+                <div class="w-10 h-10 rounded bg-white/10 overflow-hidden flex-shrink-0">
+                  <img class="w-full h-full object-cover" alt="Interstellar" src="https://image.tmdb.org/t/p/w185/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg"/>
+                </div>
+                <div class="min-w-0 flex-1">
+                  <p class="text-[13px] font-bold text-white truncate">Interstellar</p>
+                  <div class="w-full h-1.5 bg-white/10 rounded-full mt-1"><div class="w-[60%] h-full bg-primary rounded-full"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="py-8 border-t border-white/10 flex flex-col items-center justify-center gap-4 w-full text-center">
+        <span class="font-headline-xl text-[28px] text-primary font-bold tracking-tight">FlickBot</span>
+        <div class="flex flex-wrap justify-center gap-6">
+          <a class="text-on-surface-variant/70 font-label-sm text-label-sm hover:text-primary transition-colors" href="#">Privacy Policy</a>
+          <a class="text-on-surface-variant/70 font-label-sm text-label-sm hover:text-primary transition-colors" href="#">Terms of Service</a>
+          <a class="text-on-surface-variant/70 font-label-sm text-label-sm hover:text-primary transition-colors" href="#">Help Center</a>
+          <a class="text-on-surface-variant/70 font-label-sm text-label-sm hover:text-primary transition-colors" href="#">TMDb API</a>
+        </div>
+        <p class="text-on-surface-variant/50 text-[11px] uppercase tracking-widest mt-2">© 2024 FlickBot Cinema Studio. All rights reserved.</p>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Movie Detail Modal v2 -->
+  <div id="movieModal" class="fixed inset-0 flex items-center justify-center z-50 p-4 md:p-8 overflow-y-auto hidden">
+    <!-- Backdrop Overlay -->
+    <div id="modalBackdrop" class="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"></div>
+    
+    <!-- Main Glass Card Container -->
+    <div class="glass-panel w-full max-w-[1100px] rounded-2xl flex flex-col shadow-2xl relative z-10 border border-white/15 my-auto max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <!-- Close Button -->
+      <button id="closeMovieModalBtn" class="absolute top-5 right-5 p-2 rounded-full glass-pill hover:bg-white/20 transition-all z-20 text-white flex items-center justify-center">
+        <span class="material-symbols-outlined text-[24px]">close</span>
+      </button>
+
+      <div class="flex flex-col lg:flex-row p-6 sm:p-10 gap-8">
+        <!-- Left Poster -->
+        <div class="flex-shrink-0 w-full lg:w-72 mx-auto lg:mx-0">
+          <div class="relative w-full aspect-[2/3] rounded-xl overflow-hidden shadow-2xl border border-white/10 group">
+            <img id="modalPosterImg" class="w-full h-full object-cover" alt="Movie Poster" src=""/>
+            <div class="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent"></div>
+            <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center">
+              <span id="modalQualityTag" class="glass-pill px-3 py-1 text-primary font-bold rounded-full text-label-sm">4K ULTRA HD</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Details -->
+        <div class="flex flex-col flex-grow min-w-0">
+          <div class="mb-4">
+            <h1 id="modalTitle" class="font-headline-xl text-[32px] sm:text-headline-xl text-white mb-1">Movie Title</h1>
+            <p id="modalTagline" class="font-body-md text-primary/90 italic tracking-wide">Reality is only a suggestion</p>
+          </div>
+
+          <!-- Metadata Chips -->
+          <div id="modalMetadataChips" class="flex flex-wrap gap-2.5 mb-6">
+            <div class="glass-pill px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-xs">
+              <span class="material-symbols-outlined text-primary-container text-[18px]">schedule</span>
+              <span id="modalRuntime">2h 14m</span>
+            </div>
+            <div class="glass-pill px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-xs">
+              <span class="material-symbols-outlined text-primary-container text-[18px] fill" style="font-variation-settings: 'FILL' 1;">star</span>
+              <span id="modalRating" class="font-bold">8.9 / 10</span>
+            </div>
+            <div class="glass-pill px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-xs">
+              <span class="material-symbols-outlined text-primary-container text-[18px]">group</span>
+              <span id="modalVotes">124k Votes</span>
+            </div>
+            <div class="glass-pill px-3.5 py-1.5 rounded-full flex items-center gap-1.5 text-xs">
+              <span class="material-symbols-outlined text-primary-container text-[18px]">movie</span>
+              <span id="modalGenres">Sci-Fi, Action</span>
+            </div>
+          </div>
+
+          <!-- Synopsis -->
+          <div class="mb-6">
+            <h3 class="font-label-sm text-on-surface-variant/80 uppercase tracking-widest mb-2 text-[11px]">Synopsis</h3>
+            <p id="modalOverview" class="font-body-md text-on-surface leading-relaxed text-sm sm:text-base">
+              Detailed movie overview will be displayed here...
+            </p>
+          </div>
+
+          <!-- Cast Section -->
+          <div class="mb-6">
+            <h3 class="font-label-sm text-on-surface-variant/80 uppercase tracking-widest mb-3 text-[11px]">Leading Cast</h3>
+            <div id="modalCastContainer" class="flex flex-wrap gap-4">
+              <!-- Dynamic cast cards -->
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-wrap gap-4 mt-auto">
+            <button id="modalPlayBtn" class="bg-primary-container text-on-primary-container px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary-container/20">
+              <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+              Watch Now
+            </button>
+            <button id="modalWatchlistBtn" class="glass-pill px-6 py-3 rounded-xl font-bold text-white flex items-center gap-2 hover:bg-white/20 transition-all">
+              <span class="material-symbols-outlined">add</span>
+              Add to Watchlist
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Video Trailer Section -->
+      <div id="trailerSection" class="w-full border-t border-white/10 p-6 sm:p-10">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-headline-lg text-headline-lg text-white text-xl sm:text-2xl">Official Trailer</h3>
+          <div class="flex gap-2">
+            <span class="material-symbols-outlined text-primary-container">hd</span>
+            <span class="material-symbols-outlined text-on-surface-variant">closed_caption</span>
+          </div>
+        </div>
+        <div id="trailerContainer" class="relative w-full aspect-video rounded-xl overflow-hidden glass-panel border border-white/10 shadow-inner bg-black">
+          <iframe id="trailerIframe" class="w-full h-full border-0" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Gemini Chatbot Floating Icon and Popup -->
-  <div id="chatIcon" class="chat-icon">💬</div>
+  <!-- Floating Action Button for AI Chat Assistant -->
+  <button id="chatFabBtn" class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-primary-container text-on-primary-container shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-40 border border-primary/40 group" title="Open FlickBot AI Assistant">
+    <span class="material-symbols-outlined text-[28px] group-hover:rotate-12 transition-transform">smart_toy</span>
+  </button>
 
-  <div id="chatPopup" class="chatbot-popup hidden">
-    <div class="chatbot-header">
-      <span>FlickBot Chat</span>
-      <button id="closeChat" class="close-chat">✕</button>
+  <!-- AI Chat Assistant v2 Floating Window -->
+  <div id="chatAssistantWindow" class="fixed bottom-24 right-6 w-[92vw] sm:w-[380px] h-[540px] glass-panel rounded-2xl flex flex-col shadow-2xl z-50 border border-white/15 overflow-hidden hidden transition-all duration-300">
+    <!-- Chat Header -->
+    <div class="glass-panel border-b border-white/10 p-3.5 px-4 flex items-center justify-between bg-surface-container/80">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-primary-container/20 border border-primary/40 flex items-center justify-center">
+          <span class="material-symbols-outlined text-primary-container text-[20px]">smart_toy</span>
+        </div>
+        <div>
+          <h3 class="font-bold text-white text-sm leading-tight">FlickBot AI</h3>
+          <p class="text-[10px] text-primary flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-green-400 inline-block animate-pulse"></span> Gemini Powered
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-1">
+        <button id="chatClearBtn" class="p-1.5 rounded-lg text-on-surface-variant hover:text-white hover:bg-white/10 text-xs transition-colors" title="Clear Chat">
+          <span class="material-symbols-outlined text-[18px]">delete_sweep</span>
+        </button>
+        <button id="closeChatBtn" class="p-1.5 rounded-lg text-on-surface-variant hover:text-white hover:bg-white/10 text-xs transition-colors">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
     </div>
 
-    <div id="chatbotMessages" class="chatbot-messages"></div>
+    <!-- Messages Container -->
+    <div id="chatMessagesContainer" class="flex-1 p-4 overflow-y-auto flex flex-col gap-3 custom-scrollbar">
+      <div class="chatbot-msg bot text-xs">
+        👋 Hi! I am <strong>FlickBot</strong>. Ask me for movie recommendations, cast info, or plot summaries!
+      </div>
+    </div>
 
-    <div class="chatbot-input-area">
-      <input id="chatbotInput" type="text" placeholder="Ask about movies..." autocomplete="off"/>
-      <button id="sendChat">Send</button>
-      <button id="clearChat">Clear</button>
+    <!-- Quick Prompt Pills -->
+    <div class="px-3 py-1.5 flex gap-2 overflow-x-auto custom-scrollbar border-t border-white/5 bg-black/20">
+      <button class="quick-prompt-chip glass-pill text-[11px] px-3 py-1 rounded-full text-on-surface-variant hover:text-primary hover:border-primary/40 whitespace-nowrap transition-colors" data-prompt="Top sci-fi movies of all time">🌌 Top Sci-Fi</button>
+      <button class="quick-prompt-chip glass-pill text-[11px] px-3 py-1 rounded-full text-on-surface-variant hover:text-primary hover:border-primary/40 whitespace-nowrap transition-colors" data-prompt="Best animated movies 2024">🎨 2024 Animation</button>
+      <button class="quick-prompt-chip glass-pill text-[11px] px-3 py-1 rounded-full text-on-surface-variant hover:text-primary hover:border-primary/40 whitespace-nowrap transition-colors" data-prompt="Recommend action movies with plot twists">💥 Action Twists</button>
+    </div>
+
+    <!-- Input Footer -->
+    <div class="p-3 border-t border-white/10 bg-surface-container-high/60 flex items-center gap-2">
+      <input id="chatInputText" type="text" placeholder="Ask about movies..." class="flex-1 bg-white/5 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary/50" autocomplete="off"/>
+      <button id="chatSendBtn" class="bg-primary-container text-on-primary-container p-2 rounded-xl font-bold hover:brightness-110 transition-all flex items-center justify-center">
+        <span class="material-symbols-outlined text-[20px]">send</span>
+      </button>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

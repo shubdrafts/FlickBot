@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const fetch = require('node-fetch');
 const path = require('path');
+const fs = require('fs');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
@@ -11,7 +12,8 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
+const distPath = fs.existsSync(path.join(__dirname, 'dist')) ? path.join(__dirname, 'dist') : path.join(__dirname, 'public');
+app.use(express.static(distPath));
 
 const TMDB_KEY = process.env.TMDB_API_KEY;
 const TMDB_BASE = 'https://api.themoviedb.org/3';
@@ -38,13 +40,14 @@ app.get('/api/genres', async (req, res) => {
   }
 });
 
-// ✅ FIXED SEARCH ENDPOINT
+// ✅ SEARCH & DISCOVER ENDPOINT (Strict Movies vs TV Shows Separation)
 app.post('/api/search', async (req, res) => {
   try {
-    const { title, genre, year } = req.body || {};
-    console.log('[SEARCH]', { title, genre, year });
+    const { title, genre, year, type = 'movie' } = req.body || {};
+    const mediaType = type === 'tv' ? 'tv' : 'movie';
+    console.log('[SEARCH]', { title, genre, year, type: mediaType });
 
-    // If searching by title
+    // If searching by query text
     if (title && title.trim().length > 0) {
       const params = new URLSearchParams({
         api_key: TMDB_KEY,
@@ -53,13 +56,21 @@ app.post('/api/search', async (req, res) => {
         page: '1',
         include_adult: 'false'
       });
-      if (year) params.append('year', String(year));
+      if (year) {
+        if (mediaType === 'movie') params.append('primary_release_year', String(year));
+        else params.append('first_air_date_year', String(year));
+      }
 
-      const url = `${TMDB_BASE}/search/movie?${params.toString()}`;
+      const url = `${TMDB_BASE}/search/${mediaType}?${params.toString()}`;
       const data = await fetchJson(url);
 
-      // Filter by year manually (extra safety)
-      let results = data.results || [];
+      let results = (data.results || []).map(item => ({
+        ...item,
+        media_type: mediaType,
+        title: item.title || item.name || item.original_name,
+        release_date: item.release_date || item.first_air_date || ''
+      }));
+
       if (year) {
         results = results.filter(m => m.release_date && m.release_date.startsWith(String(year)));
       }
@@ -67,7 +78,7 @@ app.post('/api/search', async (req, res) => {
       return res.json({ ...data, results });
     }
 
-    // Otherwise discover movies
+    // Otherwise discover media
     const params = new URLSearchParams({
       api_key: TMDB_KEY,
       language: 'en-US',
@@ -76,10 +87,14 @@ app.post('/api/search', async (req, res) => {
       page: '1'
     });
 
-    // ✅ Use exact year range filtering
     if (year) {
-      params.append('primary_release_date.gte', `${year}-01-01`);
-      params.append('primary_release_date.lte', `${year}-12-31`);
+      if (mediaType === 'movie') {
+        params.append('primary_release_date.gte', `${year}-01-01`);
+        params.append('primary_release_date.lte', `${year}-12-31`);
+      } else {
+        params.append('first_air_date.gte', `${year}-01-01`);
+        params.append('first_air_date.lte', `${year}-12-31`);
+      }
     }
 
     if (genre) {
@@ -95,23 +110,49 @@ app.post('/api/search', async (req, res) => {
       }
     }
 
-    const url = `${TMDB_BASE}/discover/movie?${params.toString()}`;
+    const url = `${TMDB_BASE}/discover/${mediaType}?${params.toString()}`;
     console.log('[DISCOVER URL]', url);
     const data = await fetchJson(url);
-    return res.json(data);
+
+    const results = (data.results || []).map(item => ({
+      ...item,
+      media_type: mediaType,
+      title: item.title || item.name || item.original_name,
+      release_date: item.release_date || item.first_air_date || ''
+    }));
+
+    return res.json({ ...data, results });
   } catch (err) {
     console.error('[SEARCH ERROR]', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Movie details
+// Movie or TV details
 app.get('/api/movie/:id', async (req, res) => {
   try {
     const id = req.params.id;
-    const url = `${TMDB_BASE}/movie/${id}?api_key=${TMDB_KEY}&language=en-US&append_to_response=videos,images,credits`;
-    const data = await fetchJson(url);
-    res.json(data);
+    try {
+      const url = `${TMDB_BASE}/movie/${id}?api_key=${TMDB_KEY}&language=en-US&append_to_response=videos,images,credits`;
+      const data = await fetchJson(url);
+      return res.json({
+        ...data,
+        media_type: 'movie',
+        title: data.title || data.name,
+        release_date: data.release_date || data.first_air_date || ''
+      });
+    } catch (movieErr) {
+      // Try TV show endpoint if movie failed
+      const tvUrl = `${TMDB_BASE}/tv/${id}?api_key=${TMDB_KEY}&language=en-US&append_to_response=videos,images,credits`;
+      const tvData = await fetchJson(tvUrl);
+      return res.json({
+        ...tvData,
+        media_type: 'tv',
+        title: tvData.name || tvData.original_name,
+        release_date: tvData.first_air_date || '',
+        runtime: tvData.episode_run_time?.[0] || tvData.number_of_episodes || null
+      });
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -164,7 +205,7 @@ app.post('/api/chat', async (req, res) => {
 
 // Fallback
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(distPath, 'index.html'));
 });
 
 app.listen(PORT, () => {

@@ -1,5 +1,8 @@
-/* public/styles.css - FlickBot v2 Glassmorphism Design System */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* FlickBot Glassmorphism & Custom CSS */
 body {
   background: radial-gradient(circle at 20% 0%, #1e293b 0%, #111417 70%);
   min-height: 100vh;
